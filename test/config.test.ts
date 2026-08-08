@@ -22,6 +22,13 @@ describe('loadConfig', () => {
         stateDirectory: '.block-bot',
         serverId: 'localhost:25565',
       },
+      behaviors: {
+        retrieveFood: {
+          maximumItems: 4,
+          retryCooldownMs: 10_000,
+          goalRange: 2,
+        },
+      },
     })
   })
 
@@ -36,6 +43,7 @@ describe('loadConfig', () => {
         BOT_COMMAND_PREFIX: '!bot',
         BOT_LOCATION_SCAN_RADIUS: '24',
         BOT_SERVER_ID: 'test-world',
+        BOT_RETRIEVE_FOOD_MAX_ITEMS: '2',
       }).locations,
     ).toMatchObject({
       operatorUsername: 'Blake',
@@ -43,5 +51,8 @@ describe('loadConfig', () => {
       scanRadius: 24,
       serverId: 'test-world',
     })
+    expect(
+      loadConfig({ BOT_RETRIEVE_FOOD_MAX_ITEMS: '2' }).behaviors.retrieveFood.maximumItems,
+    ).toBe(2)
   })
 })

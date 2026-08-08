@@ -13,6 +13,9 @@ export class StarterPolicy implements PriorityPolicy {
         case 'eat':
           scores.set(task.id, 100 - snapshot.food * 4)
           break
+        case 'retrieve_food':
+          scores.set(task.id, 90 - snapshot.food * 3)
+          break
         case 'idle':
           scores.set(task.id, 0)
           break

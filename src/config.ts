@@ -21,6 +21,13 @@ export interface AppConfig {
     readonly stateDirectory: string
     readonly serverId: string
   }
+  readonly behaviors: {
+    readonly retrieveFood: {
+      readonly maximumItems: number
+      readonly retryCooldownMs: number
+      readonly goalRange: number
+    }
+  }
 }
 
 function integerFromEnvironment(
@@ -114,6 +121,31 @@ export function loadConfig(environment: NodeJS.ProcessEnv = process.env): AppCon
       ),
       stateDirectory,
       serverId: environment.BOT_SERVER_ID?.trim() || `${host}:${port}`,
+    },
+    behaviors: {
+      retrieveFood: {
+        maximumItems: integerFromEnvironment(
+          environment,
+          'BOT_RETRIEVE_FOOD_MAX_ITEMS',
+          4,
+          1,
+          64,
+        ),
+        retryCooldownMs: integerFromEnvironment(
+          environment,
+          'BOT_RETRIEVE_FOOD_RETRY_COOLDOWN_MS',
+          10_000,
+          1_000,
+          3_600_000,
+        ),
+        goalRange: integerFromEnvironment(
+          environment,
+          'BOT_RETRIEVE_FOOD_GOAL_RANGE',
+          2,
+          1,
+          4,
+        ),
+      },
     },
   }
 }

@@ -5,6 +5,7 @@ import type { WorldSnapshot } from '../src/domain/world-snapshot.js'
 function snapshot(inventory: WorldSnapshot['inventory']): WorldSnapshot {
   return {
     observedAt: 0,
+    dimension: 'overworld',
     health: 20,
     food: 10,
     foodSaturation: 5,
@@ -22,5 +23,11 @@ describe('EatTask', () => {
 
   it('does not mistake arbitrary inventory for food', () => {
     expect(new EatTask().canRun(snapshot([{ name: 'cobblestone', count: 64 }]))).toBe(false)
+  })
+
+  it('does not automatically consume harmful or exceptional food', () => {
+    expect(
+      new EatTask().canRun(snapshot([{ name: 'rotten_flesh', count: 4, foodPoints: 4 }])),
+    ).toBe(false)
   })
 })

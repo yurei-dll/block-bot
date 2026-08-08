@@ -7,10 +7,12 @@ import { LocationCommands } from './locations/location-commands.js'
 import { LocationRegistry } from './locations/location-registry.js'
 import { SignLocationScanner } from './locations/sign-location-scanner.js'
 import { locationStateFileName } from './locations/location-state-path.js'
+import { PathfinderNavigator } from './navigation/pathfinder-navigator.js'
 import { StarterPolicy } from './policy/starter-policy.js'
 import { TaskController } from './runtime/task-controller.js'
 import { EatTask } from './tasks/eat-task.js'
 import { IdleTask } from './tasks/idle-task.js'
+import { RetrieveFoodTask } from './tasks/retrieve-food-task.js'
 
 const config = loadConfig()
 const bot = mineflayer.createBot(config.minecraft)
@@ -31,10 +33,16 @@ const locationCommands = new LocationCommands(bot, locationRegistry, locationSca
   prefix: config.locations.commandPrefix,
 })
 let locationsReady = false
+const navigator = new PathfinderNavigator(bot)
+const retrieveFoodTask = new RetrieveFoodTask(
+  locationRegistry,
+  navigator,
+  config.behaviors.retrieveFood,
+)
 
 const controller = new TaskController(
   bot,
-  [new EatTask(), new IdleTask()],
+  [new EatTask(), retrieveFoodTask, new IdleTask()],
   new StarterPolicy(),
   {
     ...config.controller,

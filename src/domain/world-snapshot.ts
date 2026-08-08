@@ -8,6 +8,7 @@ export interface InventoryItemSnapshot {
 
 export interface WorldSnapshot {
   readonly observedAt: number
+  readonly dimension: string
   readonly health: number
   readonly food: number
   readonly foodSaturation: number
@@ -26,6 +27,7 @@ export function observeWorld(bot: Bot, activeTaskId?: string): WorldSnapshot {
   const { x, y, z } = bot.entity.position
   return {
     observedAt: Date.now(),
+    dimension: bot.game.dimension,
     health: bot.health,
     food: bot.food,
     foodSaturation: bot.foodSaturation,

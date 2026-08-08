@@ -7,11 +7,17 @@ import type { BotTask } from '../src/tasks/task.js'
 const tasks = [
   { id: 'idle', canRun: () => true, run: async () => ({ status: 'succeeded' as const }) },
   { id: 'eat', canRun: () => true, run: async () => ({ status: 'succeeded' as const }) },
+  {
+    id: 'retrieve_food',
+    canRun: () => true,
+    run: async () => ({ status: 'succeeded' as const }),
+  },
 ] satisfies BotTask[]
 
 function snapshot(food: number): WorldSnapshot {
   return {
     observedAt: 0,
+    dimension: 'overworld',
     health: 20,
     food,
     foodSaturation: 5,
@@ -35,5 +41,12 @@ describe('StarterPolicy', () => {
       ['eat', 1],
     ])
     expect(rankTasks(tasks, scores).map(({ task }) => task.id)).toEqual(['eat', 'idle'])
+  })
+
+  it('scores food retrieval above idling when it is a valid candidate', () => {
+    const world = snapshot(10)
+    const candidates = tasks.filter((task) => task.id !== 'eat')
+    const scores = new StarterPolicy().score({ snapshot: world, candidates })
+    expect(rankTasks(candidates, scores)[0]?.task.id).toBe('retrieve_food')
   })
 })

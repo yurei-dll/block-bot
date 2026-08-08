@@ -11,6 +11,7 @@
     "build": "tsc -p tsconfig.json",
     "check": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.test.json",
     "dev": "node --env-file-if-exists=.env --import tsx src/index.ts",
+    "smoke:imports": "npm run build && node --input-type=module -e \"await import('./dist/navigation/pathfinder-navigator.js')\"",
     "start": "node --env-file-if-exists=.env dist/index.js",
     "test": "vitest run"
   },

@@ -4,9 +4,10 @@ A TypeScript Mineflayer bot built around pluggable high-level task prioritizatio
 Tasks contain the deterministic code needed to do something in Minecraft. A policy
 scores the currently valid tasks and the controller runs the highest-priority one.
 
-The starter policy is deliberately tiny. It eats available food when hungry and
-otherwise idles. A future brain.js policy can implement the same `PriorityPolicy`
-interface without changing the bot's task implementations.
+The starter policy is deliberately tiny. When hungry it eats carried food, or retrieves
+safe food from the nearest approved pantry before eating; otherwise it idles. A future
+brain.js policy can implement the same `PriorityPolicy` interface without changing the
+bot's task implementations.
 
 ## Architecture
 
@@ -47,6 +48,7 @@ Useful commands:
 npm test
 npm run check
 npm run build
+npm run smoke:imports
 npm start
 ```
 
@@ -108,9 +110,42 @@ dimension, coordinates, roles, categories, provenance, approval, and verificatio
 state—not live Mineflayer block references or container contents. `BOT_SERVER_ID` can
 give the server a stable logical name; otherwise `host:port` is used.
 
+## Retrieving food
+
+`RetrieveFoodTask` becomes available only when the bot is hungry, carries no edible
+item, and has an approved, verified location in the current dimension with both the
+`pickup` role and `food` category. It selects the nearest eligible location rather than
+depending on a hard-coded pantry ID.
+
+The task currently:
+
+1. Navigates within interaction range using a conservative Pathfinder profile.
+2. Revalidates the designated block before opening it.
+3. Marks the location stale if the expected storage block has disappeared.
+4. Opens the container and chooses the best ordinary safe food by effective quality.
+5. Withdraws only enough to cover the current hunger, capped at four items by default.
+6. Closes the container in a `finally` block and returns control to `EatTask`.
+
+Navigation cannot dig, place scaffolding, tower, parkour, sprint, or open doors. This
+intentionally favors getting stuck safely over modifying the world. Failed food sources
+receive independent cooldowns, allowing another approved pantry to be tried.
+
+Potentially harmful, teleporting, unusually valuable, or non-hand-consumable foods are
+excluded from automatic retrieval for now, including rotten flesh, spider eyes,
+pufferfish, poisonous potatoes, raw chicken, chorus fruit, suspicious stew, cake, and
+golden apples.
+
+Relevant tuning variables:
+
+```dotenv
+BOT_RETRIEVE_FOOD_MAX_ITEMS=4
+BOT_RETRIEVE_FOOD_RETRY_COOLDOWN_MS=10000
+BOT_RETRIEVE_FOOD_GOAL_RANGE=2
+```
+
 ## Next milestones
 
-1. Use approved pickup locations in a movement-backed `RetrieveFoodTask`.
+1. Validate retrieval, cancellation, and stale-location recovery on a controlled server.
 2. Expand `WorldSnapshot` with nearby threats, known locations, and task progress.
 3. Persist structured decisions and task outcomes as training examples.
 4. Add a `BrainPolicy` implementation and load versioned model weights.

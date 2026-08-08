@@ -1,4 +1,5 @@
 import type { Item } from 'prismarine-item'
+import { isSafeAutomaticFood } from '../domain/food-safety.js'
 import type { BotTask, TaskContext, TaskResult } from './task.js'
 import type { WorldSnapshot } from '../domain/world-snapshot.js'
 
@@ -6,7 +7,10 @@ function findBestFood(context: TaskContext): Item | undefined {
   const { bot } = context
   return bot.inventory
     .items()
-    .filter((item) => bot.registry.foodsByName[item.name] !== undefined)
+    .filter(
+      (item) =>
+        bot.registry.foodsByName[item.name] !== undefined && isSafeAutomaticFood(item.name),
+    )
     .sort((left, right) => {
       const leftPoints = bot.registry.foodsByName[left.name]?.foodPoints ?? 0
       const rightPoints = bot.registry.foodsByName[right.name]?.foodPoints ?? 0
@@ -20,7 +24,12 @@ export class EatTask implements BotTask {
   public canRun(snapshot: WorldSnapshot): boolean {
     return (
       snapshot.food < 20 &&
-      snapshot.inventory.some((item) => item.count > 0 && item.foodPoints !== undefined)
+      snapshot.inventory.some(
+        (item) =>
+          item.count > 0 &&
+          item.foodPoints !== undefined &&
+          isSafeAutomaticFood(item.name),
+      )
     )
   }
 

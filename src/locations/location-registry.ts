@@ -183,6 +183,18 @@ export class LocationRegistry {
     return true
   }
 
+  public async setStatus(id: string, status: LocationStatus): Promise<boolean> {
+    const existing = this.designations.get(id)
+    if (!existing) return false
+    this.designations.set(id, {
+      ...existing,
+      status,
+      updatedAt: new Date().toISOString(),
+    })
+    await this.save()
+    return true
+  }
+
   private async save(): Promise<void> {
     const state: LocationStateFile = {
       schemaVersion: LOCATION_STATE_SCHEMA_VERSION,
