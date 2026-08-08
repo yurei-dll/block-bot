@@ -144,3 +144,6 @@ vite.config.ts.timestamp-*
 
 # macOS metadata
 .DS_Store
+
+# Block Bot world-specific runtime state
+.block-bot/

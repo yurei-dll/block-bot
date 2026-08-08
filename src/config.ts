@@ -13,6 +13,14 @@ export interface AppConfig {
     readonly minimumTaskRuntimeMs: number
     readonly switchMargin: number
   }
+  readonly locations: {
+    readonly operatorUsername?: string
+    readonly commandPrefix: string
+    readonly scanRadius: number
+    readonly scanLimit: number
+    readonly stateDirectory: string
+    readonly serverId: string
+  }
 }
 
 function integerFromEnvironment(
@@ -55,10 +63,17 @@ export function loadConfig(environment: NodeJS.ProcessEnv = process.env): AppCon
   }
 
   const version = environment.MC_VERSION?.trim()
+  const host = environment.MC_HOST?.trim() || 'localhost'
+  const port = integerFromEnvironment(environment, 'MC_PORT', 25_565, 1, 65_535)
+  const operatorUsername = environment.BOT_OPERATOR_USERNAME?.trim()
+  const commandPrefix = environment.BOT_COMMAND_PREFIX?.trim() || '!bb'
+  const stateDirectory = environment.BOT_STATE_DIRECTORY?.trim() || '.block-bot'
+  if (/\s/.test(commandPrefix)) throw new Error('BOT_COMMAND_PREFIX cannot contain whitespace')
+
   return {
     minecraft: {
-      host: environment.MC_HOST?.trim() || 'localhost',
-      port: integerFromEnvironment(environment, 'MC_PORT', 25_565, 1, 65_535),
+      host,
+      port,
       username: environment.MC_USERNAME?.trim() || 'block-bot',
       auth,
       ...(version ? { version } : {}),
@@ -79,6 +94,26 @@ export function loadConfig(environment: NodeJS.ProcessEnv = process.env): AppCon
         60_000,
       ),
       switchMargin: numberFromEnvironment(environment, 'BOT_SWITCH_MARGIN', 10, 0),
+    },
+    locations: {
+      ...(operatorUsername ? { operatorUsername } : {}),
+      commandPrefix,
+      scanRadius: integerFromEnvironment(
+        environment,
+        'BOT_LOCATION_SCAN_RADIUS',
+        16,
+        1,
+        64,
+      ),
+      scanLimit: integerFromEnvironment(
+        environment,
+        'BOT_LOCATION_SCAN_LIMIT',
+        128,
+        1,
+        1_024,
+      ),
+      stateDirectory,
+      serverId: environment.BOT_SERVER_ID?.trim() || `${host}:${port}`,
     },
   }
 }

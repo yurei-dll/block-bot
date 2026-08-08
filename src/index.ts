@@ -1,7 +1,12 @@
 import mineflayer from 'mineflayer'
 import { pathfinder } from 'mineflayer-pathfinder'
+import { resolve } from 'node:path'
 import { loadConfig } from './config.js'
 import { observeWorld } from './domain/world-snapshot.js'
+import { LocationCommands } from './locations/location-commands.js'
+import { LocationRegistry } from './locations/location-registry.js'
+import { SignLocationScanner } from './locations/sign-location-scanner.js'
+import { locationStateFileName } from './locations/location-state-path.js'
 import { StarterPolicy } from './policy/starter-policy.js'
 import { TaskController } from './runtime/task-controller.js'
 import { EatTask } from './tasks/eat-task.js'
@@ -10,6 +15,22 @@ import { IdleTask } from './tasks/idle-task.js'
 const config = loadConfig()
 const bot = mineflayer.createBot(config.minecraft)
 bot.loadPlugin(pathfinder)
+
+const locationRegistry = new LocationRegistry(
+  resolve(config.locations.stateDirectory, locationStateFileName(config.locations.serverId)),
+)
+const locationScanner = new SignLocationScanner(bot, {
+  serverId: config.locations.serverId,
+  radius: config.locations.scanRadius,
+  limit: config.locations.scanLimit,
+})
+const locationCommands = new LocationCommands(bot, locationRegistry, locationScanner, {
+  ...(config.locations.operatorUsername
+    ? { operatorUsername: config.locations.operatorUsername }
+    : {}),
+  prefix: config.locations.commandPrefix,
+})
+let locationsReady = false
 
 const controller = new TaskController(
   bot,
@@ -31,9 +52,31 @@ const controller = new TaskController(
   },
 )
 
-bot.once('spawn', () => {
+bot.once('spawn', async () => {
   console.info(`[minecraft] spawned as ${bot.username} on ${config.minecraft.host}:${config.minecraft.port}`)
+  try {
+    await locationRegistry.load()
+    locationsReady = true
+    console.info(`[locations] loaded ${locationRegistry.list().length} designations`)
+    if (config.locations.operatorUsername) {
+      console.info(
+        `[locations] commands enabled for ${config.locations.operatorUsername}: ${config.locations.commandPrefix} help`,
+      )
+    } else {
+      console.info('[locations] commands disabled; set BOT_OPERATOR_USERNAME to enable them')
+    }
+  } catch (error) {
+    console.error('[locations] failed to load; location commands are disabled', error)
+  }
   controller.start()
+})
+
+bot.on('chat', (username, message) => {
+  if (!locationsReady || username === bot.username) return
+  void locationCommands.handle(username, message).catch((error: unknown) => {
+    console.error('[locations] command failed', error)
+    bot.chat('Block Bot location command failed; check the server log.')
+  })
 })
 
 bot.on('kicked', (reason) => console.error('[minecraft] kicked', reason))
